@@ -1,0 +1,58 @@
+{
+  "navOrder": [
+    "dashboard",
+    "operations",
+    "analytics",
+    "budgets",
+    "settings"
+  ],
+  "dashboardWidgets": [
+    {
+      "id": "summary",
+      "type": "summary",
+      "titleKey": "widget.summary",
+      "pinned": true,
+      "layout": "wide"
+    },
+    {
+      "id": "monthly-line",
+      "type": "chart",
+      "titleKey": "widget.monthlyLine",
+      "chartType": "line",
+      "dataset": "monthly",
+      "metric": "split",
+      "pinned": true,
+      "layout": "wide"
+    },
+    {
+      "id": "category-expenses",
+      "type": "chart",
+      "titleKey": "widget.expenseCategories",
+      "chartType": "doughnut",
+      "dataset": "expense_categories",
+      "metric": "total",
+      "pinned": false,
+      "layout": "standard"
+    },
+    {
+      "id": "recent-transactions",
+      "type": "transactions",
+      "titleKey": "widget.recentTransactions",
+      "pinned": false,
+      "layout": "standard"
+    },
+    {
+      "id": "budgets",
+      "type": "budgets",
+      "titleKey": "widget.budgets",
+      "pinned": false,
+      "layout": "standard"
+    }
+  ],
+  "preferences": {
+    "language": "uk",
+    "currency": "UAH",
+    "display_currency": "UAH",
+    "theme": "dark"
+  }
+}

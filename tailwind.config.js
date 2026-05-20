@@ -4,6 +4,7 @@ module.exports = {
     "./index.html",
     "./src/**/*.{vue,js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -17,7 +18,19 @@ module.exports = {
           green: '#27AE60',
           red: '#EB5757',
           orange: '#F2994A'
+        },
+        glass: {
+          light: 'rgba(255, 255, 255, 0.7)',
+          'light-border': 'rgba(255, 255, 255, 0.3)',
+          dark: 'rgba(28, 28, 30, 0.7)',
+          'dark-border': 'rgba(255, 255, 255, 0.1)',
         }
+      },
+      backdropBlur: {
+        xs: '2px',
+        sm: '8px',
+        md: '12px',
+        lg: '24px',
       }
     },
   },

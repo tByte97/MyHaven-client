@@ -2,8 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap');
+
+:root {
+  --app-bg: #0a0f1e;
+  --app-bg-accent: #111a31;
+  --app-ink: #e4f0f6;
+  --app-muted: #8ca0b3;
+  --app-accent: #1f7aff;
+  --app-card: rgba(18, 28, 52, 0.82);
+  --app-card-dark: rgba(12, 18, 34, 0.9);
+  --app-border: rgba(228, 240, 246, 0.12);
+  --app-soft: rgba(228, 240, 246, 0.06);
+}
+
 body {
-  background-color: #F3F4F6; 
-  color: #111827; 
-  font-family: 'Inter', sans-serif;
+  background:
+    radial-gradient(900px 500px at 15% -10%, rgba(31, 122, 255, 0.22) 0%, transparent 60%),
+    radial-gradient(700px 420px at 100% 0%, rgba(228, 240, 246, 0.14) 0%, transparent 55%),
+    linear-gradient(180deg, #070b16 0%, var(--app-bg) 45%, var(--app-bg-accent) 100%);
+  color: var(--app-ink);
+  font-family: 'Space Grotesk', sans-serif;
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(228, 240, 246, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(228, 240, 246, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: -1;
+}
+
+html.dark body {
+  color: #f1f5f9;
+}
+
+.bg-app-gradient {
+  background: transparent;
+}
+
+.font-accent {
+  font-family: 'Newsreader', serif;
 }

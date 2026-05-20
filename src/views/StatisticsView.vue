@@ -1,6 +1,7 @@
   <script setup>
   import { ref, onMounted, computed } from "vue";
   import axios from "axios";
+  import { API_BASE } from "../config";
   import { Line, Doughnut } from "vue-chartjs";
   import {
     Chart as ChartJS,
@@ -28,6 +29,7 @@
   const monthlyData = ref([]);
   const expenseData = ref([]);
   const incomeData = ref([]);
+  const bankData = ref([]);
   const isLoading = ref(true);
 
 
@@ -100,6 +102,21 @@
     };
   });
 
+  // дані для кругового графіка (по банках)
+  const bankChartData = computed(() => {
+    if (!bankData.value.length) return { datasets: [] };
+
+    return {
+      labels: bankData.value.map((d) => d.account__bank__name || 'Невідомий'),
+      datasets: [
+        {
+          backgroundColor: ["#3498DB", "#2980B9", "#1ABC9C", "#16A085", "#F39C12"],
+          data: bankData.value.map((d) => Math.abs((d.expenses || 0)) + (d.incomes || 0)),
+        },
+      ],
+    };
+  });
+
   onMounted(() => {
     fetchStatistics();
   });
@@ -108,7 +125,7 @@ async function fetchStatistics() {
   isLoading.value = true;
   try {
     const response = await axios.get(
-      "http://127.0.0.1:8000/transactions/api/statistics/",
+      `${API_BASE}/transactions/api/statistics/`,
       {
         params: {
             months: selectedMonths.value
@@ -119,6 +136,7 @@ async function fetchStatistics() {
     monthlyData.value = response.data.monthly_summary;
     expenseData.value = response.data.expense_categories;
     incomeData.value = response.data.income_categories;
+    bankData.value = response.data.by_bank_stats || [];
   } catch (error) {
     console.error("Помилка завантаження статистики:", error);
   } finally {
