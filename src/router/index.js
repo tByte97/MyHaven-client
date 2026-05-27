@@ -49,14 +49,20 @@ const routes = [
     component: () => import('../views/BudgetsView.vue'),
     meta: { requiresAuth: true },
   },
-  // Profile → Settings (Files moved inside Settings)
+  // Profile → Settings
   {
     path: '/profile',
     redirect: '/settings',
   },
   {
     path: '/files',
-    redirect: '/settings',
+    name: 'Files',
+    component: () => import('../views/FilesView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/uploads',
+    redirect: '/files',
   },
   {
     path: '/settings',

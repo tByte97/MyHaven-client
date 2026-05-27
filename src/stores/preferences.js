@@ -15,9 +15,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
   const userConfig = useUserConfigStore();
   const language = ref(userConfig.config.preferences.language || 'uk');
   const currency = ref(userConfig.config.preferences.currency || 'UAH');
-  const displayCurrency = ref(
-    userConfig.config.preferences.display_currency || userConfig.config.preferences.currency || 'UAH'
-  );
+  const displayCurrency = ref(userConfig.config.preferences.display_currency || 'UAH');
   const theme = ref(userConfig.config.preferences.theme || 'dark');
   const isSyncing = ref(false);
   const systemScheme = typeof window !== 'undefined'
@@ -75,18 +73,10 @@ export const usePreferencesStore = defineStore('preferences', () => {
       isSyncing.value = true;
       const res = await api.getProfile();
       if (res?.data) {
-        if (res.data.language) {
-          setLanguage(res.data.language, true);
-        }
-        if (res.data.currency) {
-          setCurrency(res.data.currency, true);
-        }
-        if (res.data.display_currency) {
-          setDisplayCurrency(res.data.display_currency, true);
-        }
-        if (res.data.theme) {
-          setTheme(res.data.theme, true);
-        }
+        setLanguage(res.data.language || 'uk', true);
+        setCurrency(res.data.currency || 'UAH', true);
+        setDisplayCurrency(res.data.display_currency || res.data.currency || 'UAH', true);
+        setTheme(res.data.theme || theme.value || 'dark', true);
       }
     } catch (error) {
       console.warn('Failed to load preferences from server.', error);

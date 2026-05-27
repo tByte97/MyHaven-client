@@ -4,6 +4,7 @@ import api from '../stores/api';
 import { useAuthStore } from '../stores/auth';
 import { usePreferencesStore } from '../stores/preferences';
 import { useRouter } from 'vue-router';
+import PageHeader from '../components/PageHeader.vue';
 import {
   User,
   Shield,
@@ -37,7 +38,6 @@ const tabs = [
   { id: 'appearance', label: 'Зовнішній вигляд', icon: Palette },
   { id: 'locale', label: 'Мова та Регіон', icon: Globe },
   { id: 'notifications', label: 'Повідомлення', icon: Bell },
-  { id: 'files', label: 'Виписки та Дані', icon: FileText },
 ];
 
 // ===== PROFILE TAB =====
@@ -161,6 +161,8 @@ async function disableTOTP() {
 }
 
 // ===== APPEARANCE TAB =====
+const appearanceMsg = ref('');
+const appearanceError = ref('');
 const selectedTheme = computed({
   get: () => preferencesStore.theme,
   set: (value) => preferencesStore.setTheme(value),
@@ -168,6 +170,20 @@ const selectedTheme = computed({
 
 function updateTheme(newTheme) {
   selectedTheme.value = newTheme;
+  appearanceMsg.value = '';
+  appearanceError.value = '';
+}
+
+async function saveAppearance() {
+  try {
+    await preferencesStore.savePreferences();
+    appearanceMsg.value = 'Тему збережено!';
+    appearanceError.value = '';
+    setTimeout(() => { appearanceMsg.value = ''; }, 3000);
+  } catch (e) {
+    console.error(e);
+    appearanceError.value = 'Помилка збереження теми';
+  }
 }
 
 // ===== LOCALE TAB =====
@@ -235,26 +251,52 @@ async function saveNotifications() {
   }
 }
 
-// Telegram connection (placeholder - requires backend implementation)
 const showTelegramLink = ref(false);
 const telegramLinkToken = ref('');
 const telegramLinkExpires = ref('');
 const telegramLinkError = ref('');
+const telegramLinkMsg = ref('');
 const isLinkLoading = ref(false);
+const isUnlinkLoading = ref(false);
 
 async function connectTelegram() {
   telegramLinkError.value = '';
+  telegramLinkMsg.value = '';
   isLinkLoading.value = true;
   try {
     const res = await api.createTelegramLinkCode();
     telegramLinkToken.value = res.data.secret;
     telegramLinkExpires.value = res.data.expires_at;
     showTelegramLink.value = true;
+    telegramLinkMsg.value = 'Ключ створено. Надішліть його боту через кнопку прив’язки.';
   } catch (e) {
     console.error(e);
     telegramLinkError.value = 'Не вдалося створити секретний ключ';
   } finally {
     isLinkLoading.value = false;
+  }
+}
+
+async function unlinkTelegram() {
+  telegramLinkError.value = '';
+  telegramLinkMsg.value = '';
+  if (!confirm('Відв’язати Telegram від цього профілю? Бот втратить доступ до акаунта.')) return;
+
+  isUnlinkLoading.value = true;
+  try {
+    await api.unlinkTelegram();
+    telegramStatus.value = { connected: false, username: null };
+    notifications.value.telegram_notifications = false;
+    showTelegramLink.value = false;
+    telegramLinkToken.value = '';
+    telegramLinkExpires.value = '';
+    telegramLinkMsg.value = 'Telegram відв’язано. Старий ключ і доступ бота видалені.';
+    await fetchProfile();
+  } catch (e) {
+    console.error(e);
+    telegramLinkError.value = 'Не вдалося відв’язати Telegram';
+  } finally {
+    isUnlinkLoading.value = false;
   }
 }
 
@@ -402,8 +444,6 @@ onMounted(() => {
   fetchProfile();
   preferencesStore.hydrateFromServer();
   fetchNotifications();
-  fetchUploads();
-  fetchBanks();
 
   // Check TOTP status from profile
   api.getProfile().then(res => {
@@ -413,14 +453,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6 max-w-6xl mx-auto">
-    <header class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Налаштування</h1>
-      <p class="text-gray-500 dark:text-gray-400 text-sm">Керування профілем, безпекою та налаштуваннями застосунку</p>
-    </header>
+  <div>
+    <PageHeader
+      eyebrow="Система"
+      title="Налаштування"
+      subtitle="Профіль, безпека, українська локалізація, гривня та повідомлення."
+    />
 
     <!-- Tabs -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6 bg-white/50 dark:bg-dark-card/50 backdrop-blur-md p-2 rounded-2xl border border-white/30 dark:border-white/10">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-6 glass-strong p-2 rounded-xl">
       <button
         v-for="tab in tabs"
         :key="tab.id"
@@ -650,6 +691,9 @@ onMounted(() => {
         <Palette :size="20" /> Тема інтерфейсу
       </h3>
 
+      <div v-if="appearanceMsg" class="mb-4 px-4 py-2 bg-green-50/80 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl text-sm backdrop-blur-sm">{{ appearanceMsg }}</div>
+      <div v-if="appearanceError" class="mb-4 px-4 py-2 bg-red-50/80 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-xl text-sm backdrop-blur-sm">{{ appearanceError }}</div>
+
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <!-- Light Theme -->
         <button
@@ -702,6 +746,14 @@ onMounted(() => {
           <p class="text-xs text-gray-500 dark:text-gray-400">За системою</p>
         </button>
       </div>
+
+      <button
+        @click="saveAppearance"
+        :disabled="preferencesStore.isSyncing"
+        class="mt-5 px-4 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-all disabled:opacity-60"
+      >
+        {{ preferencesStore.isSyncing ? 'Збереження...' : 'Зберегти тему' }}
+      </button>
     </div>
 
     <!-- ===== LOCALE TAB ===== -->
@@ -732,10 +784,8 @@ onMounted(() => {
             class="w-full px-3 py-2 border border-gray-200 dark:border-white/10 rounded-xl text-sm bg-white/50 dark:bg-dark-input/50 text-gray-900 dark:text-white backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="UAH">₴ Українська гривня (UAH)</option>
-            <option value="USD">$ Долар США (USD)</option>
-            <option value="EUR">€ Євро (EUR)</option>
           </select>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Валюта для відображення сум</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Суми в інтерфейсі відображаються у гривні</p>
         </div>
 
         <button
@@ -840,13 +890,23 @@ onMounted(() => {
       <div class="bg-white/70 dark:bg-dark-card/70 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-white/30 dark:border-white/10">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Підключення Telegram</h3>
 
+        <div v-if="telegramLinkMsg" class="mb-4 px-4 py-2 bg-green-50/80 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl text-sm backdrop-blur-sm">{{ telegramLinkMsg }}</div>
+        <div v-if="telegramLinkError" class="mb-4 px-4 py-2 bg-red-50/80 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-xl text-sm backdrop-blur-sm">{{ telegramLinkError }}</div>
+
         <div v-if="telegramStatus.connected" class="space-y-4">
-          <div class="flex items-center gap-3 p-4 bg-green-50/80 dark:bg-green-900/30 rounded-xl backdrop-blur-sm">
-            <CheckCircle :size="20" class="text-green-600 dark:text-green-400" />
+          <div class="flex flex-wrap items-center gap-3 p-4 bg-green-50/80 dark:bg-green-900/30 rounded-xl backdrop-blur-sm">
+            <CheckCircle :size="20" class="text-green-600 dark:text-green-400 shrink-0" />
             <div class="flex-1">
               <p class="text-sm font-medium text-gray-900 dark:text-white">Підключено</p>
               <p class="text-xs text-gray-500 dark:text-gray-400">@{{ telegramStatus.username || 'невідомий' }}</p>
             </div>
+            <button
+              @click="unlinkTelegram"
+              :disabled="isUnlinkLoading"
+              class="px-4 py-2.5 bg-red-600 dark:bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-all disabled:opacity-50"
+            >
+              {{ isUnlinkLoading ? 'Відв’язуємо...' : 'Відв’язати Telegram' }}
+            </button>
           </div>
           <p class="text-sm text-gray-600 dark:text-gray-400">
             Ви можете використовувати Telegram бота для швидкого перегляду балансу та додавання транзакцій.
@@ -855,18 +915,15 @@ onMounted(() => {
 
         <div v-else class="space-y-4">
           <p class="text-sm text-gray-600 dark:text-gray-400">
-            Підключіть Telegram для отримання повідомлень та швидкого керування фінансами через бота.
+            Підв’яжіть Telegram для отримання повідомлень та швидкого керування фінансами через бота.
           </p>
           <button
             @click="connectTelegram"
             :disabled="isLinkLoading"
             class="px-4 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-all"
           >
-            {{ isLinkLoading ? 'Генеруємо ключ...' : 'Підключити Telegram' }}
+            {{ isLinkLoading ? 'Генеруємо ключ...' : 'Підв’язати Telegram' }}
           </button>
-          <p v-if="telegramLinkError" class="text-xs text-red-600 dark:text-red-400">
-            {{ telegramLinkError }}
-          </p>
 
           <div v-if="showTelegramLink" class="space-y-3 p-4 bg-gray-50/80 dark:bg-gray-800/50 rounded-xl backdrop-blur-sm">
             <p class="text-xs text-gray-500 dark:text-gray-400">Секретний ключ для Telegram бота:</p>
@@ -880,7 +937,7 @@ onMounted(() => {
               </button>
             </div>
             <p class="text-xs text-gray-500 dark:text-gray-400">
-              Введіть у боті: <span class="font-medium">/link {{ telegramLinkToken }}</span>
+              У Telegram-боті натисніть кнопку <span class="font-medium">Прив’язати акаунт</span> і надішліть цей ключ.
             </p>
             <p v-if="telegramLinkExpires" class="text-xs text-gray-500 dark:text-gray-400">
               Дійсний до: {{ formatShortDate(telegramLinkExpires) }}

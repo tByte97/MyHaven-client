@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import api from '../stores/api';
 import { usePreferencesStore } from '../stores/preferences';
+import PageHeader from '../components/PageHeader.vue';
 import { Plus, Trash2, PiggyBank } from 'lucide-vue-next';
 
 const budgets = ref([]);
@@ -98,29 +99,31 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6 max-w-6xl mx-auto">
-    <header class="flex justify-between items-center mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900">Бюджети</h1>
-        <p class="text-gray-500 text-sm">Контроль витрат по категоріях</p>
-      </div>
+  <div>
+    <PageHeader
+      eyebrow="Ліміти"
+      title="Бюджети"
+      subtitle="Контролюйте витрати по категоріях у гривні та бачте залишок на місяць."
+    >
+      <template #actions>
       <button
         @click="showAddModal = true"
-        class="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition"
+        class="mh-button-primary"
       >
         <Plus :size="18" /> Новий бюджет
       </button>
-    </header>
+      </template>
+    </PageHeader>
 
     <!-- Month selector -->
     <div class="flex items-center justify-center gap-4 mb-6">
-      <button @click="changeMonth(-1)" class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-sm transition">&larr;</button>
+      <button @click="changeMonth(-1)" class="mh-button-secondary px-3 py-1.5">&larr;</button>
       <span class="text-lg font-semibold text-gray-900 capitalize">{{ monthLabel }}</span>
-      <button @click="changeMonth(1)" class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-sm transition">&rarr;</button>
+      <button @click="changeMonth(1)" class="mh-button-secondary px-3 py-1.5">&rarr;</button>
     </div>
 
     <!-- Summary card -->
-    <div class="bg-white rounded-2xl p-6 mb-6 shadow-sm border border-gray-100">
+    <div class="glass-strong rounded-xl p-6 mb-6">
       <div class="grid grid-cols-3 gap-4 text-center">
         <div>
           <p class="text-xs text-gray-500 mb-1">Загальний бюджет</p>
@@ -152,7 +155,7 @@ onMounted(() => {
       <div
         v-for="b in budgets"
         :key="b.id"
-        class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100"
+        class="glass-strong rounded-xl p-5"
       >
         <div class="flex justify-between items-start mb-3">
           <div>

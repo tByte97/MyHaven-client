@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
 import api from './api';
+import { usePreferencesStore } from './preferences';
 
 function applyAccessToken(accessToken) {
   if (accessToken) {
@@ -56,6 +57,7 @@ export const useAuthStore = defineStore('auth', {
 
       this.completeSession(response.data);
       await this.fetchUser();
+      await usePreferencesStore().hydrateFromServer();
       return { requiresTotp: false };
     },
 
@@ -66,6 +68,7 @@ export const useAuthStore = defineStore('auth', {
       });
       this.completeSession(response.data);
       await this.fetchUser();
+      await usePreferencesStore().hydrateFromServer();
       return true;
     },
 

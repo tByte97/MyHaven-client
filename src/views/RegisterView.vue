@@ -1,51 +1,17 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { Check, ChevronLeft, ChevronRight, Globe2, Landmark, Palette, UserRound, Wallet, ShieldCheck, CircleCheck } from 'lucide-vue-next';
+import { Check, ChevronLeft, ChevronRight, Loader2, Sparkles } from 'lucide-vue-next';
+import BrandMark from '../components/BrandMark.vue';
 import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
 const authStore = useAuthStore();
 
-const steps = [
-  { id: 'identity', title: 'Акаунт', subtitle: 'Базові дані для входу і профілю.', icon: UserRound },
-  { id: 'language', title: 'Мова', subtitle: 'Інтерфейс і локаль застосунку.', icon: Globe2 },
-  { id: 'currency', title: 'Валюта', subtitle: 'Основна валюта щоденних витрат.', icon: Landmark },
-  { id: 'tracking', title: 'Джерела', subtitle: 'Які фінансові канали ви відстежуєте.', icon: Wallet },
-  { id: 'theme', title: 'Вигляд', subtitle: 'Тема і валюта відображення сум.', icon: Palette },
-];
-
-const languageOptions = [
-  { value: 'uk', label: 'Українська', hint: 'Основна локаль для України' },
-  { value: 'en', label: 'English', hint: 'Для міжнародного інтерфейсу' },
-  { value: 'de', label: 'Deutsch', hint: 'Для німецькомовного використання' },
-  { value: 'es', label: 'Español', hint: 'Для іспаномовного інтерфейсу' },
-  { value: 'pl', label: 'Polski', hint: 'Для польського регіонального сценарію' },
-];
-
-const currencyOptions = [
-  { value: 'UAH', label: 'UAH', hint: 'Українська гривня', symbol: '₴' },
-  { value: 'USD', label: 'USD', hint: 'Долар США', symbol: '$' },
-  { value: 'EUR', label: 'EUR', hint: 'Євро', symbol: '€' },
-  { value: 'PLN', label: 'PLN', hint: 'Польський злотий', symbol: 'zł' },
-  { value: 'GBP', label: 'GBP', hint: 'Британський фунт', symbol: '£' },
-  { value: 'CHF', label: 'CHF', hint: 'Швейцарський франк', symbol: 'Fr' },
-];
-
-const trackingOptions = [
-  { value: 'cash', label: 'Готівка' },
-  { value: 'card', label: 'Картка' },
-  { value: 'bank', label: 'Банк' },
-  { value: 'wallet', label: 'Гаманець' },
-  { value: 'savings', label: 'Заощадження' },
-  { value: 'all', label: 'Все разом' },
-];
-
-const themeOptions = [
-  { value: 'dark', label: 'Abyss', hint: 'Темна робоча тема' },
-  { value: 'light', label: 'Frost', hint: 'Світлий режим' },
-  { value: 'auto', label: 'System', hint: 'Автовибір за системою' },
-];
+const steps = ['Акаунт', 'Мова', 'Валюта', 'Джерела', 'Вигляд'];
+const currentStep = ref(0);
+const errorMsg = ref('');
+const isSubmitting = ref(false);
 
 const form = ref({
   username: '',
@@ -60,39 +26,22 @@ const form = ref({
   tracking_sources: ['card'],
 });
 
-const currentStep = ref(0);
-const errorMsg = ref('');
-const isSubmitting = ref(false);
+const sourceOptions = [
+  { value: 'manual', label: 'Ручні операції', desc: 'Додавайте витрати самостійно' },
+  { value: 'telegram', label: 'Telegram-бот', desc: 'Швидкі записи через приватного бота' },
+  { value: 'upload', label: 'Банківські виписки', desc: 'Імпорт CSV, XLSX або PDF' },
+];
 
-const activeStep = computed(() => steps[currentStep.value]);
+const themeOptions = [
+  { value: 'light', label: 'Світла', desc: 'Світлий фон і чорний текст', gradient: 'from-[#FFFFFF] to-[#E8EEF6]' },
+  { value: 'dark', label: 'Темна', desc: 'Темний фон і світлий текст', gradient: 'from-[#0A0F1E] to-[#1F2937]' },
+  { value: 'auto', label: 'Авто', desc: 'За системною темою', gradient: 'from-[#FFFFFF] via-[#94A3B8] to-[#0A0F1E]' },
+];
+
 const isLastStep = computed(() => currentStep.value === steps.length - 1);
-const progressText = computed(() => `Крок ${currentStep.value + 1} з ${steps.length}`);
-
-function isSelected(currentValue, optionValue) {
-  return currentValue === optionValue;
-}
-
-function toggleTracking(value) {
-  const current = new Set(form.value.tracking_sources);
-
-  if (value === 'all') {
-    form.value.tracking_sources = ['all'];
-    return;
-  }
-
-  current.delete('all');
-  if (current.has(value)) {
-    current.delete(value);
-  } else {
-    current.add(value);
-  }
-
-  form.value.tracking_sources = Array.from(current);
-}
 
 function validateStep() {
   errorMsg.value = '';
-
   if (currentStep.value === 0) {
     if (!form.value.username || !form.value.email || !form.value.password) {
       errorMsg.value = 'Заповніть логін, email і пароль.';
@@ -103,53 +52,43 @@ function validateStep() {
       return false;
     }
   }
-
   if (currentStep.value === 3 && !form.value.tracking_sources.length) {
-    errorMsg.value = 'Оберіть хоча б одне джерело відстеження.';
+    errorMsg.value = 'Оберіть хоча б одне джерело.';
     return false;
   }
-
   return true;
 }
 
 function nextStep() {
-  if (validateStep()) {
-    currentStep.value += 1;
-  }
+  if (validateStep()) currentStep.value += 1;
 }
 
 function previousStep() {
-  if (currentStep.value > 0) {
-    currentStep.value -= 1;
-    errorMsg.value = '';
-  }
+  currentStep.value = Math.max(0, currentStep.value - 1);
+  errorMsg.value = '';
+}
+
+function toggleSource(value) {
+  const selected = new Set(form.value.tracking_sources);
+  if (selected.has(value)) selected.delete(value);
+  else selected.add(value);
+  form.value.tracking_sources = Array.from(selected);
 }
 
 async function submitRegistration() {
-  if (!validateStep()) {
-    return;
-  }
-
+  if (!validateStep()) return;
   isSubmitting.value = true;
   errorMsg.value = '';
   try {
+    form.value.language = 'uk';
+    form.value.currency = 'UAH';
+    form.value.display_currency = 'UAH';
     const result = await authStore.register(form.value);
-    if (result.requiresTotp) {
-      router.push('/login');
-      return;
-    }
-    router.push('/dashboard');
+    if (result.requiresTotp) router.push('/login');
+    else router.push('/dashboard');
   } catch (err) {
     const data = err.response?.data;
-    if (data?.email?.[0]) {
-      errorMsg.value = data.email[0];
-    } else if (data?.password?.[0]) {
-      errorMsg.value = data.password[0];
-    } else if (data?.username?.[0]) {
-      errorMsg.value = data.username[0];
-    } else {
-      errorMsg.value = 'Не вдалося завершити реєстрацію.';
-    }
+    errorMsg.value = data?.email?.[0] || data?.password?.[0] || data?.username?.[0] || 'Не вдалося завершити реєстрацію.';
   } finally {
     isSubmitting.value = false;
   }
@@ -157,228 +96,143 @@ async function submitRegistration() {
 </script>
 
 <template>
-  <section class="min-h-screen px-6 py-10 lg:px-10">
-    <div class="max-w-7xl mx-auto">
-      <div class="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <aside class="rounded-[28px] border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl shadow-black/20 p-8 lg:p-10">
-          <div class="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200">
-            <ShieldCheck :size="16" class="text-emerald-400" />
-            <span>MyHaven Onboarding</span>
-          </div>
+  <section class="min-h-screen flex items-center justify-center p-6">
+    <div class="w-full max-w-3xl">
+      <div class="flex items-center justify-between mb-10">
+        <button class="flex items-center gap-2" @click="router.push('/login')">
+          <BrandMark class="size-9 rounded-lg gradient-sky shadow-glow" image-class="h-[72%] w-[72%] object-contain" />
+          <div class="font-accent text-lg">MyHaven</div>
+        </button>
+        <div class="text-xs text-[color:var(--app-muted)]">
+          Крок <span class="text-white font-medium">{{ currentStep + 1 }}</span> з {{ steps.length }}
+        </div>
+      </div>
 
-          <div class="mt-8">
-            <p class="text-xs uppercase tracking-[0.32em] text-slate-400">Desktop Registration</p>
-            <h1 class="mt-4 font-accent text-4xl lg:text-6xl leading-none text-white">
-              Підготуйте робочий простір під себе
-            </h1>
-            <p class="mt-5 text-base lg:text-lg text-slate-300/90 leading-7">
-              Реєстрація з орієнтацією на desktop-користувача: чиста форма, компактні вибори і налаштування без mobile-app патернів.
-            </p>
-          </div>
+      <div class="flex gap-1.5 mb-10">
+        <div v-for="(_, index) in steps" :key="index" class="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
+          <div class="h-full gradient-sky transition-all duration-500" :style="{ width: index <= currentStep ? '100%' : '0%' }"></div>
+        </div>
+      </div>
 
-          <div class="mt-10 grid gap-4">
-            <div
-              v-for="(step, index) in steps"
-              :key="step.id"
-              class="rounded-2xl border px-4 py-4 transition"
-              :class="index === currentStep ? 'border-sky-500/40 bg-sky-500/10' : 'border-white/10 bg-white/5'"
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex items-start gap-3">
-                  <div class="mt-0.5 rounded-xl bg-white/5 p-2 text-sky-300">
-                    <component :is="step.icon" :size="16" />
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-white">{{ step.title }}</p>
-                    <p class="mt-1 text-sm text-slate-400">{{ step.subtitle }}</p>
-                  </div>
-                </div>
-                <CircleCheck v-if="index < currentStep" :size="18" class="text-emerald-400" />
-              </div>
-            </div>
-          </div>
+      <div class="glass-strong rounded-2xl p-8 lg:p-10 shadow-elevated min-h-[480px]">
+        <div class="text-xs uppercase tracking-[0.2em] text-sky-300 mb-2">{{ steps[currentStep] }}</div>
 
-          <div class="mt-8 rounded-3xl border border-white/10 bg-slate-950/30 p-5">
-            <p class="text-sm text-slate-400">Вибрано зараз</p>
-            <div class="mt-4 flex flex-wrap gap-2">
-              <span class="rounded-full bg-white/5 px-3 py-1.5 text-xs text-slate-200">{{ form.language.toUpperCase() }}</span>
-              <span class="rounded-full bg-white/5 px-3 py-1.5 text-xs text-slate-200">{{ form.currency }}</span>
-              <span class="rounded-full bg-white/5 px-3 py-1.5 text-xs text-slate-200">{{ form.theme }}</span>
-              <span class="rounded-full bg-white/5 px-3 py-1.5 text-xs text-slate-200">{{ form.display_currency }}</span>
-            </div>
+        <div v-if="currentStep === 0">
+          <h2 class="font-accent text-3xl text-white mb-1">Створімо ваш простір.</h2>
+          <p class="text-sm text-[color:var(--app-muted)] mb-8">Базові дані для входу й профілю.</p>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <label class="space-y-1.5">
+              <span class="text-xs text-[color:var(--app-muted)]">Ім'я</span>
+              <input v-model="form.first_name" class="mh-input" />
+            </label>
+            <label class="space-y-1.5">
+              <span class="text-xs text-[color:var(--app-muted)]">Прізвище</span>
+              <input v-model="form.last_name" class="mh-input" />
+            </label>
+            <label class="space-y-1.5">
+              <span class="text-xs text-[color:var(--app-muted)]">Логін</span>
+              <input v-model="form.username" class="mh-input" />
+            </label>
+            <label class="space-y-1.5">
+              <span class="text-xs text-[color:var(--app-muted)]">Email</span>
+              <input v-model="form.email" type="email" class="mh-input" />
+            </label>
+            <label class="space-y-1.5 sm:col-span-2">
+              <span class="text-xs text-[color:var(--app-muted)]">Пароль</span>
+              <input v-model="form.password" type="password" class="mh-input" />
+            </label>
           </div>
-        </aside>
+        </div>
 
-        <div class="rounded-[28px] border border-white/10 bg-white/10 backdrop-blur-xl shadow-2xl shadow-black/20 p-8 lg:p-10">
-          <div class="flex items-center justify-between gap-4">
+        <div v-else-if="currentStep === 1">
+          <h2 class="font-accent text-3xl text-white mb-1">Мова інтерфейсу.</h2>
+          <p class="text-sm text-[color:var(--app-muted)] mb-8">MyHaven буде працювати українською.</p>
+          <button type="button" class="w-full text-left p-4 rounded-xl border border-sky-400/40 bg-sky-500/10">
+            <div class="font-medium text-white">Українська</div>
+            <div class="text-xs text-[color:var(--app-muted)]">Україна · uk-UA</div>
+            <Check class="absolute" />
+          </button>
+        </div>
+
+        <div v-else-if="currentStep === 2">
+          <h2 class="font-accent text-3xl text-white mb-1">Основна валюта.</h2>
+          <p class="text-sm text-[color:var(--app-muted)] mb-8">Суми зберігаються й відображаються у гривні.</p>
+          <div class="p-4 rounded-xl border border-sky-400/40 bg-sky-500/10 flex items-center gap-3">
+            <div class="size-10 rounded-lg bg-sky-500/15 text-sky-300 font-accent text-xl grid place-items-center">₴</div>
             <div>
-              <p class="text-xs uppercase tracking-[0.22em] text-slate-400">{{ progressText }}</p>
-              <h2 class="mt-2 text-3xl font-semibold text-white">{{ activeStep.title }}</h2>
-            </div>
-            <button
-              type="button"
-              class="inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-slate-200"
-              @click="router.push('/login')"
-            >
-              <ChevronLeft :size="16" />
-              До входу
-            </button>
-          </div>
-
-          <div class="mt-6 grid grid-cols-5 gap-2">
-            <span
-              v-for="(step, index) in steps"
-              :key="step.id"
-              class="h-1.5 rounded-full"
-              :class="index <= currentStep ? 'bg-sky-500' : 'bg-white/10'"
-            ></span>
-          </div>
-
-          <div class="mt-8">
-            <div v-if="currentStep === 0" class="grid gap-5 md:grid-cols-2">
-              <div>
-                <label class="mb-2 block text-sm text-slate-400">Логін</label>
-                <input v-model="form.username" type="text" placeholder="myhaven_user" class="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none" />
-              </div>
-              <div>
-                <label class="mb-2 block text-sm text-slate-400">Email</label>
-                <input v-model="form.email" type="email" placeholder="you@example.com" class="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none" />
-              </div>
-              <div>
-                <label class="mb-2 block text-sm text-slate-400">Ім'я</label>
-                <input v-model="form.first_name" type="text" placeholder="Ім'я" class="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none" />
-              </div>
-              <div>
-                <label class="mb-2 block text-sm text-slate-400">Прізвище</label>
-                <input v-model="form.last_name" type="text" placeholder="Прізвище" class="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none" />
-              </div>
-              <div class="md:col-span-2">
-                <label class="mb-2 block text-sm text-slate-400">Пароль</label>
-                <input v-model="form.password" type="password" placeholder="Мінімум 8 символів" class="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none" />
-              </div>
-            </div>
-
-            <div v-else-if="currentStep === 1" class="grid gap-3">
-              <button
-                v-for="option in languageOptions"
-                :key="option.value"
-                type="button"
-                class="flex items-center justify-between rounded-2xl border px-4 py-3 text-left transition"
-                :class="isSelected(form.language, option.value) ? 'border-sky-500/40 bg-sky-500/10' : 'border-white/10 bg-slate-950/20 hover:bg-white/5'"
-                @click="form.language = option.value"
-              >
-                <div>
-                  <p class="text-sm font-medium text-white">{{ option.label }}</p>
-                  <p class="mt-1 text-sm text-slate-400">{{ option.hint }}</p>
-                </div>
-                <Check v-if="isSelected(form.language, option.value)" :size="18" class="text-sky-300" />
-              </button>
-            </div>
-
-            <div v-else-if="currentStep === 2" class="grid gap-3 md:grid-cols-2">
-              <button
-                v-for="option in currencyOptions"
-                :key="option.value"
-                type="button"
-                class="rounded-2xl border px-4 py-4 text-left transition"
-                :class="isSelected(form.currency, option.value) ? 'border-sky-500/40 bg-sky-500/10' : 'border-white/10 bg-slate-950/20 hover:bg-white/5'"
-                @click="form.currency = option.value"
-              >
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <p class="text-base font-semibold text-white">{{ option.label }}</p>
-                    <p class="mt-1 text-sm text-slate-400">{{ option.hint }}</p>
-                  </div>
-                  <span class="text-lg text-sky-300">{{ option.symbol }}</span>
-                </div>
-              </button>
-            </div>
-
-            <div v-else-if="currentStep === 3" class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <button
-                v-for="option in trackingOptions"
-                :key="option.value"
-                type="button"
-                class="rounded-2xl border px-4 py-4 text-left text-sm transition"
-                :class="form.tracking_sources.includes(option.value) ? 'border-sky-500/40 bg-sky-500/10 text-white' : 'border-white/10 bg-slate-950/20 text-slate-300 hover:bg-white/5'"
-                @click="toggleTracking(option.value)"
-              >
-                {{ option.label }}
-              </button>
-            </div>
-
-            <div v-else class="grid gap-8">
-              <div>
-                <p class="mb-3 text-sm text-slate-400">Тема інтерфейсу</p>
-                <div class="grid gap-3 md:grid-cols-3">
-                  <button
-                    v-for="option in themeOptions"
-                    :key="option.value"
-                    type="button"
-                    class="rounded-2xl border px-4 py-4 text-left transition"
-                    :class="isSelected(form.theme, option.value) ? 'border-sky-500/40 bg-sky-500/10' : 'border-white/10 bg-slate-950/20 hover:bg-white/5'"
-                    @click="form.theme = option.value"
-                  >
-                    <p class="text-sm font-medium text-white">{{ option.label }}</p>
-                    <p class="mt-1 text-sm text-slate-400">{{ option.hint }}</p>
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <p class="mb-3 text-sm text-slate-400">Валюта відображення витрат</p>
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    v-for="option in currencyOptions"
-                    :key="option.value"
-                    type="button"
-                    class="rounded-xl border px-3 py-2 text-sm transition"
-                    :class="isSelected(form.display_currency, option.value) ? 'border-sky-500/40 bg-sky-500/10 text-white' : 'border-white/10 bg-slate-950/20 text-slate-300 hover:bg-white/5'"
-                    @click="form.display_currency = option.value"
-                  >
-                    {{ option.label }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <p v-if="errorMsg" class="mt-5 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-              {{ errorMsg }}
-            </p>
-
-            <div class="mt-8 flex items-center justify-between gap-4">
-              <button
-                v-if="currentStep > 0"
-                type="button"
-                class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/10"
-                @click="previousStep"
-              >
-                <ChevronLeft :size="16" />
-                Назад
-              </button>
-              <div v-else></div>
-
-              <button
-                v-if="!isLastStep"
-                type="button"
-                class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                @click="nextStep"
-              >
-                Продовжити
-                <ChevronRight :size="16" />
-              </button>
-              <button
-                v-else
-                type="button"
-                :disabled="isSubmitting"
-                class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-70"
-                @click="submitRegistration"
-              >
-                {{ isSubmitting ? 'Створюємо акаунт…' : 'Створити акаунт' }}
-              </button>
+              <div class="font-medium text-white">UAH</div>
+              <div class="text-xs text-[color:var(--app-muted)]">Українська гривня</div>
             </div>
           </div>
         </div>
+
+        <div v-else-if="currentStep === 3">
+          <h2 class="font-accent text-3xl text-white mb-1">Як відстежуємо гроші?</h2>
+          <p class="text-sm text-[color:var(--app-muted)] mb-8">Оберіть сценарії, які плануєте використовувати.</p>
+          <div class="grid md:grid-cols-3 gap-3">
+            <button
+              v-for="source in sourceOptions"
+              :key="source.value"
+              type="button"
+              class="text-left p-4 rounded-xl border transition"
+              :class="form.tracking_sources.includes(source.value) ? 'border-sky-400/40 bg-sky-500/10' : 'border-white/10 bg-white/5 hover:bg-white/10'"
+              @click="toggleSource(source.value)"
+            >
+              <div class="font-medium text-white">{{ source.label }}</div>
+              <div class="text-xs text-[color:var(--app-muted)] mt-1">{{ source.desc }}</div>
+            </button>
+          </div>
+        </div>
+
+        <div v-else>
+          <h2 class="font-accent text-3xl text-white mb-1">Фінальний штрих.</h2>
+          <p class="text-sm text-[color:var(--app-muted)] mb-8">Оберіть тему, з якою відкриється ваш простір.</p>
+          <div class="grid md:grid-cols-3 gap-4">
+            <button
+              v-for="theme in themeOptions"
+              :key="theme.value"
+              type="button"
+              class="text-left rounded-xl border overflow-hidden transition"
+              :class="form.theme === theme.value ? 'border-sky-400/50 ring-1 ring-sky-400/30 bg-sky-500/10' : 'border-white/10 bg-white/5 hover:bg-white/10'"
+              @click="form.theme = theme.value"
+            >
+              <div class="h-24 bg-gradient-to-br" :class="theme.gradient"></div>
+              <div class="p-4">
+                <div class="font-medium text-white">{{ theme.label }}</div>
+                <div class="text-xs text-[color:var(--app-muted)]">{{ theme.desc }}</div>
+              </div>
+            </button>
+          </div>
+
+          <div class="mt-8 p-4 rounded-xl bg-white/5 border border-white/10">
+            <div class="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[color:var(--app-muted)] mb-3">
+              <Sparkles :size="14" class="text-sky-300" /> Підсумок
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div><p class="text-[10px] uppercase tracking-widest text-[color:var(--app-muted)]">Мова</p><p class="font-medium text-white mt-1">Українська</p></div>
+              <div><p class="text-[10px] uppercase tracking-widest text-[color:var(--app-muted)]">Валюта</p><p class="font-medium text-white mt-1">UAH</p></div>
+              <div><p class="text-[10px] uppercase tracking-widest text-[color:var(--app-muted)]">Тема</p><p class="font-medium text-white mt-1">{{ form.theme }}</p></div>
+              <div><p class="text-[10px] uppercase tracking-widest text-[color:var(--app-muted)]">Джерела</p><p class="font-medium text-white mt-1">{{ form.tracking_sources.length }}</p></div>
+            </div>
+          </div>
+        </div>
+
+        <p v-if="errorMsg" class="mt-5 rounded-md border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+          {{ errorMsg }}
+        </p>
+      </div>
+
+      <div class="flex justify-between mt-6">
+        <button class="mh-button-secondary" @click="currentStep === 0 ? router.push('/login') : previousStep()">
+          <ChevronLeft :size="17" /> {{ currentStep === 0 ? 'До входу' : 'Назад' }}
+        </button>
+        <button v-if="!isLastStep" class="mh-button-primary" @click="nextStep">
+          Продовжити <ChevronRight :size="17" />
+        </button>
+        <button v-else class="mh-button-primary" :disabled="isSubmitting" @click="submitRegistration">
+          <Loader2 v-if="isSubmitting" :size="17" class="animate-spin" />
+          <template v-else><Check :size="17" /> Створити акаунт</template>
+        </button>
       </div>
     </div>
   </section>

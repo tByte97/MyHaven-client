@@ -34,8 +34,9 @@ export default {
 
   // ─── Uploads / Files ──────────────────
   getUploads: () => axios.get(`${API}/transactions/api/uploads/`),
-  uploadFile: (formData) => axios.post(`${API}/transactions/api/uploads/`, formData, {
+  uploadFile: (formData, config = {}) => axios.post(`${API}/transactions/api/uploads/`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    ...config,
   }),
   deleteUpload: (id) => axios.delete(`${API}/transactions/api/uploads/${id}/`),
   getBanks: () => axios.get(`${API}/transactions/api/banks/`),
@@ -49,6 +50,7 @@ export default {
 
   // ─── Telegram Link ───────────────────
   createTelegramLinkCode: () => axios.post(`${API}/api/users/telegram/link-code/`),
+  unlinkTelegram: () => axios.delete(`${API}/api/users/telegram/unlink/`),
 
   // ─── TOTP 2FA ─────────────────────────
   getTOTPSetup: () => axios.get(`${API}/api/users/totp/setup/`),

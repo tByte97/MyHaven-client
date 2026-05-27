@@ -94,29 +94,29 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="fixed inset-x-0 bottom-4 z-50 flex justify-center pointer-events-none">
+  <div class="fixed inset-x-0 bottom-4 z-50 flex justify-center pointer-events-none lg:hidden">
     <div
       class="relative pointer-events-auto"
       @mouseenter="() => { isHovering = true; showDock(); }"
       @mouseleave="() => { isHovering = false; }"
     >
       <div
-        class="absolute inset-x-6 -top-6 h-6 bg-gradient-to-t from-white/60 dark:from-black/40 to-transparent"
+        class="absolute inset-x-6 -top-6 h-6 bg-gradient-to-t from-black/40 to-transparent"
       ></div>
       <nav
-        class="flex items-center gap-2 px-4 py-3 rounded-2xl border border-white/30 dark:border-white/10 bg-white/70 dark:bg-dark-card/60 backdrop-blur-xl shadow-xl shadow-black/10 transition-all duration-300"
+        class="flex items-center gap-2 px-3 py-3 rounded-xl border border-white/10 bg-[rgba(9,14,27,0.88)] backdrop-blur-xl shadow-elevated transition-all duration-300"
         :class="isHidden ? 'translate-y-10 opacity-70' : 'translate-y-0 opacity-100'"
       >
         <button
           v-for="item in orderedItems"
           :key="item.id"
           type="button"
-          class="group flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200"
+          class="group flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
           :class="[
             route.path === item.to
-              ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-lg'
-              : 'text-slate-700 dark:text-slate-200 hover:bg-white/60 dark:hover:bg-white/10',
-            dragOverId === item.id ? 'ring-2 ring-teal-400' : '',
+              ? 'gradient-sky text-white shadow-glow'
+              : 'text-slate-300 hover:bg-white/10',
+            dragOverId === item.id ? 'ring-2 ring-sky-400' : '',
           ]"
           draggable="true"
           @dragstart="onDragStart(item.id)"

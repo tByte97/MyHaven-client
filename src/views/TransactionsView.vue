@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import api from '../stores/api';
 import { usePreferencesStore } from '../stores/preferences';
+import PageHeader from '../components/PageHeader.vue';
 import { Search, Filter, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-vue-next';
 
 const transactions = ref([]);
@@ -97,22 +98,24 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6 max-w-6xl mx-auto">
-    <header class="flex justify-between items-center mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900">Транзакції</h1>
-        <p class="text-gray-500 text-sm">{{ pagination.count }} записів</p>
-      </div>
+  <div>
+    <PageHeader
+      eyebrow="Операції"
+      title="Транзакції"
+      :subtitle="`${pagination.count} записів у гривні, з фільтрами за датою, типом і категорією.`"
+    >
+      <template #actions>
       <button
         @click="showAddModal = true"
-        class="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition"
+        class="mh-button-primary"
       >
         <Plus :size="18" /> Додати
       </button>
-    </header>
+      </template>
+    </PageHeader>
 
     <!-- Filters -->
-    <div class="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-gray-100 flex flex-wrap gap-3 items-end">
+    <div class="glass-strong rounded-xl p-4 mb-4 flex flex-wrap gap-3 items-end">
       <div class="flex-1 min-w-[180px]">
         <label class="text-xs text-gray-500 mb-1 block">Пошук</label>
         <div class="relative">
@@ -121,14 +124,14 @@ onMounted(() => {
             v-model="filters.search"
             @keyup.enter="applyFilters"
             placeholder="Опис транзакції..."
-            class="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="mh-input pl-9 text-sm"
           />
         </div>
       </div>
 
       <div>
         <label class="text-xs text-gray-500 mb-1 block">Тип</label>
-        <select v-model="filters.type" @change="applyFilters" class="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <select v-model="filters.type" @change="applyFilters" class="mh-select text-sm">
           <option value="">Всі</option>
           <option value="expense">Витрати</option>
           <option value="income">Доходи</option>
@@ -137,7 +140,7 @@ onMounted(() => {
 
       <div>
         <label class="text-xs text-gray-500 mb-1 block">Категорія</label>
-        <select v-model="filters.category" @change="applyFilters" class="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <select v-model="filters.category" @change="applyFilters" class="mh-select text-sm">
           <option value="">Всі</option>
           <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
@@ -145,21 +148,21 @@ onMounted(() => {
 
       <div>
         <label class="text-xs text-gray-500 mb-1 block">Від</label>
-        <input v-model="filters.date_from" @change="applyFilters" type="date" class="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <input v-model="filters.date_from" @change="applyFilters" type="date" class="mh-input text-sm" />
       </div>
 
       <div>
         <label class="text-xs text-gray-500 mb-1 block">До</label>
-        <input v-model="filters.date_to" @change="applyFilters" type="date" class="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <input v-model="filters.date_to" @change="applyFilters" type="date" class="mh-input text-sm" />
       </div>
 
-      <button @click="applyFilters" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium transition flex items-center gap-1">
+      <button @click="applyFilters" class="mh-button-secondary">
         <Filter :size="16" /> Фільтр
       </button>
     </div>
 
     <!-- Table -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="glass-strong rounded-xl overflow-hidden">
       <div v-if="isLoading" class="p-12 text-center text-gray-400">Завантаження...</div>
 
       <table v-else class="w-full text-sm">

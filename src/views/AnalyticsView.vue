@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import api from '../stores/api';
 import { usePreferencesStore } from '../stores/preferences';
+import PageHeader from '../components/PageHeader.vue';
 import { Line, Doughnut } from 'vue-chartjs';
 import {
   Chart as ChartJS,
@@ -15,6 +16,7 @@ import {
   CategoryScale,
   LinearScale,
   ArcElement,
+  Filler,
 } from 'chart.js';
 import { BarChart3, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 
@@ -28,7 +30,8 @@ ChartJS.register(
   LineElement,
   CategoryScale,
   LinearScale,
-  ArcElement
+  ArcElement,
+  Filler
 );
 
 // ===== TAB MANAGEMENT =====
@@ -48,15 +51,41 @@ const isLoadingStats = ref(true);
 const selectedMonths = ref('6');
 const preferencesStore = usePreferencesStore();
 
-const chartOptions = ref({
+const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  interaction: { mode: 'nearest', intersect: false },
+  interaction: { mode: 'index', intersect: false },
   plugins: {
-    legend: { position: 'bottom' },
-    tooltip: { enabled: true },
+    legend: {
+      position: 'bottom',
+      labels: { color: '#8ca0b3', boxWidth: 10, usePointStyle: true },
+    },
+    tooltip: {
+      backgroundColor: 'rgba(12, 18, 34, 0.95)',
+      borderColor: 'rgba(238, 246, 251, 0.12)',
+      borderWidth: 1,
+      titleColor: '#fff',
+      bodyColor: '#eef6fb',
+    },
   },
-});
+  scales: {
+    x: { grid: { color: 'rgba(238, 246, 251, 0.04)' }, ticks: { color: '#8ca0b3' } },
+    y: {
+      grid: { color: 'rgba(238, 246, 251, 0.06)' },
+      ticks: {
+        color: '#8ca0b3',
+        callback: (value) => preferencesStore.formatCurrency(Number(value), { maximumFractionDigits: 0 }),
+      },
+    },
+  },
+};
+
+const doughnutOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  cutout: '64%',
+  plugins: chartOptions.plugins,
+};
 
 const lineChartData = computed(() => {
   if (!monthlyData.value.length) return { datasets: [] };
@@ -70,14 +99,20 @@ const lineChartData = computed(() => {
     datasets: [
       {
         label: 'Доходи',
-        backgroundColor: 'green',
-        borderColor: 'green',
+        backgroundColor: 'rgba(48, 214, 154, 0.22)',
+        borderColor: '#30d69a',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 2,
         data: monthlyData.value.map((d) => d.total_incomes || 0),
       },
       {
         label: 'Витрати',
-        backgroundColor: 'red',
-        borderColor: 'red',
+        backgroundColor: 'rgba(31, 122, 255, 0.22)',
+        borderColor: '#1f7aff',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 2,
         data: monthlyData.value.map((d) => Math.abs(d.total_expenses || 0)),
       },
     ],
@@ -91,7 +126,8 @@ const expenseDoughnutData = computed(() => {
     labels: expenseData.value.map((d) => d.category__name),
     datasets: [
       {
-        backgroundColor: ['#E74C3C', '#A93226', '#F1948A', '#C0392B', '#EC7063'],
+        backgroundColor: ['#1f7aff', '#30d69a', '#f5ba45', '#f06464', '#9f7aea', '#47c7ff'],
+        borderWidth: 0,
         data: expenseData.value.map((d) => Math.abs(d.total)),
       },
     ],
@@ -105,7 +141,8 @@ const incomeDoughnutData = computed(() => {
     labels: incomeData.value.map((d) => d.category__name),
     datasets: [
       {
-        backgroundColor: ['#2ECC71', '#27AE60', '#7DCEA0', '#229954'],
+        backgroundColor: ['#30d69a', '#47c7ff', '#f5ba45', '#9f7aea', '#1f7aff'],
+        borderWidth: 0,
         data: incomeData.value.map((d) => d.total),
       },
     ],
@@ -119,7 +156,8 @@ const bankChartData = computed(() => {
     labels: bankData.value.map((d) => d.account__bank__name || 'Невідомий'),
     datasets: [
       {
-        backgroundColor: ['#3498DB', '#2980B9', '#1ABC9C', '#16A085', '#F39C12'],
+        backgroundColor: ['#1f7aff', '#47c7ff', '#30d69a', '#f5ba45', '#f06464'],
+        borderWidth: 0,
         data: bankData.value.map((d) => Math.abs((d.expenses || 0)) + (d.incomes || 0)),
       },
     ],
@@ -239,14 +277,35 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6 max-w-7xl mx-auto">
-    <header class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Аналітика</h1>
-      <p class="text-gray-500 dark:text-gray-400 text-sm">Огляд ваших фінансів та календар витрат</p>
-    </header>
+  <div>
+    <PageHeader
+      eyebrow="Аналітика"
+      title="Форма ваших фінансів"
+      subtitle="Огляд фінансового потоку, категорій, банків і щоденної активності."
+    >
+      <template #actions>
+        <div class="flex gap-1 p-1 bg-[color:var(--app-soft)] rounded-lg border border-[color:var(--app-border)]">
+          <button
+            v-for="period in [
+              { value: '3', label: '3М' },
+              { value: '6', label: '6М' },
+              { value: '12', label: '1Р' },
+              { value: '24', label: '2Р' },
+            ]"
+            :key="period.value"
+            class="px-3 py-1.5 rounded-md text-xs font-semibold transition"
+            :class="selectedMonths === period.value ? 'bg-[color:var(--app-card-strong)] text-[color:var(--app-heading)] shadow-sm' : 'text-[color:var(--app-muted)] hover:text-[color:var(--app-heading)]'"
+            type="button"
+            @click="selectedMonths = period.value; fetchStatistics();"
+          >
+            {{ period.label }}
+          </button>
+        </div>
+      </template>
+    </PageHeader>
 
     <!-- Tab Switcher з glass effect -->
-    <div class="flex gap-2 mb-6 bg-white/50 dark:bg-dark-card/50 backdrop-blur-md p-2 rounded-2xl border border-white/30 dark:border-white/10">
+    <div class="flex gap-2 mb-6 glass-strong p-2 rounded-xl">
       <button
         v-for="tab in tabs"
         :key="tab.id"
@@ -265,69 +324,61 @@ onMounted(() => {
 
     <!-- Tab Content: Statistics -->
     <div v-if="activeTab === 'charts'">
-      <!-- Period Selector -->
-      <div class="flex justify-end mb-6">
-        <div class="flex items-center gap-3 bg-white/70 dark:bg-dark-card/70 backdrop-blur-md px-5 py-3 rounded-2xl shadow-lg border border-white/30 dark:border-white/10">
-          <label class="text-sm text-gray-600 dark:text-gray-400 font-medium">Період:</label>
-          <select
-            v-model="selectedMonths"
-            @change="fetchStatistics"
-            class="border-none bg-transparent font-semibold text-blue-600 dark:text-blue-400 cursor-pointer outline-none"
-          >
-            <option value="1">Останній місяць</option>
-            <option value="3">3 місяці</option>
-            <option value="6">6 місяців</option>
-            <option value="12">Рік</option>
-            <option value="24">2 роки</option>
-          </select>
-        </div>
-      </div>
-
       <div v-if="isLoadingStats" class="text-center py-24">
         <div class="w-12 h-12 border-4 border-blue-200 dark:border-blue-800 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin mx-auto mb-4"></div>
         <p class="text-gray-400">Аналізуємо дані...</p>
       </div>
 
-      <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <!-- Line Chart - Full Width -->
-        <section class="lg:col-span-2 bg-white/70 dark:bg-dark-card/70 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-white/30 dark:border-white/10 transition-all duration-300 hover:shadow-xl">
-          <div class="mb-4 border-l-4 border-blue-500 pl-3">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Динаміка (Доходи vs Витрати)</h3>
+        <section class="lg:col-span-2 glass-strong rounded-xl p-5 lg:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+            <div>
+              <p class="text-xs uppercase tracking-[0.22em] text-[color:var(--app-muted)]">Динаміка</p>
+              <h3 class="font-accent text-2xl text-[color:var(--app-heading)] mt-1">Доходи проти витрат</h3>
+            </div>
+            <div class="flex items-center gap-3 text-xs text-[color:var(--app-muted)]">
+              <span class="inline-flex items-center gap-1.5"><span class="size-2 rounded-full bg-[color:var(--app-success)]"></span>Доходи</span>
+              <span class="inline-flex items-center gap-1.5"><span class="size-2 rounded-full bg-[color:var(--app-accent)]"></span>Витрати</span>
+            </div>
           </div>
-          <div class="h-96">
+          <div class="h-72 sm:h-80 lg:h-96">
             <Line :data="lineChartData" :options="chartOptions" />
           </div>
         </section>
 
         <!-- Expense Doughnut -->
-        <section class="bg-white/70 dark:bg-dark-card/70 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-white/30 dark:border-white/10 transition-all duration-300 hover:shadow-xl">
-          <div class="mb-4 border-l-4 border-red-500 pl-3">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Структура Витрат</h3>
+        <section class="glass-strong rounded-xl p-5 lg:p-6">
+          <div class="mb-4">
+            <p class="text-xs uppercase tracking-[0.22em] text-[color:var(--app-muted)]">Витрати</p>
+            <h3 class="font-accent text-2xl text-[color:var(--app-heading)] mt-1">За категоріями</h3>
           </div>
           <div class="h-72">
-            <Doughnut v-if="expenseData.length" :data="expenseDoughnutData" :options="chartOptions" />
+            <Doughnut v-if="expenseData.length" :data="expenseDoughnutData" :options="doughnutOptions" />
             <div v-else class="h-full flex items-center justify-center text-gray-400 italic">Немає даних про витрати</div>
           </div>
         </section>
 
         <!-- Income Doughnut -->
-        <section class="bg-white/70 dark:bg-dark-card/70 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-white/30 dark:border-white/10 transition-all duration-300 hover:shadow-xl">
-          <div class="mb-4 border-l-4 border-green-500 pl-3">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Структура Доходів</h3>
+        <section class="glass-strong rounded-xl p-5 lg:p-6">
+          <div class="mb-4">
+            <p class="text-xs uppercase tracking-[0.22em] text-[color:var(--app-muted)]">Доходи</p>
+            <h3 class="font-accent text-2xl text-[color:var(--app-heading)] mt-1">За джерелами</h3>
           </div>
           <div class="h-72">
-            <Doughnut v-if="incomeData.length" :data="incomeDoughnutData" :options="chartOptions" />
+            <Doughnut v-if="incomeData.length" :data="incomeDoughnutData" :options="doughnutOptions" />
             <div v-else class="h-full flex items-center justify-center text-gray-400 italic">Немає даних про доходи</div>
           </div>
         </section>
 
         <!-- Bank Chart -->
-        <section class="lg:col-span-2 bg-white/70 dark:bg-dark-card/70 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-white/30 dark:border-white/10 transition-all duration-300 hover:shadow-xl">
-          <div class="mb-4 border-l-4 border-blue-500 pl-3">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">По Банках (Net Flow)</h3>
+        <section class="lg:col-span-2 glass-strong rounded-xl p-5 lg:p-6">
+          <div class="mb-4">
+            <p class="text-xs uppercase tracking-[0.22em] text-[color:var(--app-muted)]">Банки</p>
+            <h3 class="font-accent text-2xl text-[color:var(--app-heading)] mt-1">Розподіл активності</h3>
           </div>
           <div class="h-72">
-            <Doughnut v-if="bankData && bankData.length" :data="bankChartData" :options="chartOptions" />
+            <Doughnut v-if="bankData && bankData.length" :data="bankChartData" :options="doughnutOptions" />
             <div v-else class="h-full flex items-center justify-center text-gray-400 italic">Немає даних по банках</div>
           </div>
         </section>
