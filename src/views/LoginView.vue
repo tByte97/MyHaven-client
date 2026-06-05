@@ -78,14 +78,14 @@ function backToCredentials() {
         <div class="max-w-lg">
           <div class="inline-flex items-center gap-2 text-xs glass rounded-full px-3 py-1.5 mb-6">
             <Sparkles :size="14" class="text-sky-300" />
-            Створено для ясності
+            Створено для зручності
           </div>
           <h1 class="font-accent text-6xl leading-[1.05] text-white">
             Ваші фінанси,<br />
-            <span class="italic text-sky-300">зібрані спокійно.</span>
+            <span class="italic text-sky-300">зберігаються у безпеці</span>
           </h1>
           <p class="mt-6 text-[color:var(--app-muted)] text-base max-w-md leading-relaxed">
-            Відстежуйте витрати, плануйте бюджети й аналізуйте гроші у робочому просторі MyHaven.
+            Відстежуйте витрати, плануйте бюджети й аналізуйте у робочому просторі MyHaven
           </p>
         </div>
 
@@ -97,10 +97,6 @@ function backToCredentials() {
           <div class="glass rounded-xl p-4">
             <div class="font-accent text-2xl text-sky-300">2FA</div>
             <div class="text-[11px] uppercase tracking-wider text-[color:var(--app-muted)] mt-1">захист</div>
-          </div>
-          <div class="glass rounded-xl p-4">
-            <div class="font-accent text-2xl text-sky-300">Live</div>
-            <div class="text-[11px] uppercase tracking-wider text-[color:var(--app-muted)] mt-1">дані</div>
           </div>
         </div>
       </div>
@@ -191,7 +187,7 @@ function backToCredentials() {
           </form>
 
           <button class="mx-auto flex items-center gap-2 text-xs text-[color:var(--app-muted)] hover:text-white" @click="backToCredentials">
-            <ArrowLeft :size="15" /> Назад до входу
+            <ArrowLeft :size="15" /> Назад до логіну
           </button>
         </div>
       </div>

@@ -102,10 +102,7 @@ onMounted(() => {
 
     <div class="min-w-0 flex-1 flex flex-col">
       <header class="mh-topbar">
-        <div class="relative hidden sm:block max-w-md w-full">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--app-muted)]" :size="17" />
-          <input class="mh-input h-9 pl-9 text-sm" placeholder="Пошук транзакцій, категорій..." />
-        </div>
+  
         <div class="sm:hidden flex items-center gap-2">
           <BrandMark class="size-8 rounded-lg gradient-sky" image-class="h-[72%] w-[72%] object-contain" />
           <span class="font-accent text-lg">MyHaven</span>
