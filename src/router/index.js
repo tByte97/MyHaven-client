@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import axios from 'axios';
 import { useAuthStore } from '../stores/auth';
 
 import DashboardView from '../views/DashboardView.vue';
@@ -74,7 +73,8 @@ const routes = [
     path: '/telegram-webapp',
     name: 'TelegramWebApp',
     component: () => import('../views/TelegramWebAppView.vue'),
-    meta: { requiresAuth: true, webApp: true },
+    // Автентифікується сама через Telegram initData (див. TelegramWebAppView).
+    meta: { webApp: true },
   },
   {
     path: '/login',
@@ -94,20 +94,9 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
+  // Токен із query (?token=) навмисно не приймаємо: чуже посилання могло б
+  // залогінити користувача в акаунт нападника.
   const auth = useAuthStore();
-  const queryToken = to.query.access_token || to.query.token;
-
-  if (queryToken && typeof queryToken === 'string') {
-    auth.token = queryToken;
-    localStorage.setItem('access_token', queryToken);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${queryToken}`;
-
-    const cleanQuery = { ...to.query };
-    delete cleanQuery.access_token;
-    delete cleanQuery.token;
-    next({ path: to.path, query: cleanQuery, replace: true });
-    return;
-  }
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     next('/login');

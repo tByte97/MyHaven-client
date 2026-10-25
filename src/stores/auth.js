@@ -90,6 +90,17 @@ export const useAuthStore = defineStore('auth', {
       this.pendingLoginToken = null;
     },
 
+    // Сесія Telegram WebApp: токен лише в пам'яті. У web.telegram.org WebApp
+    // відкривається в iframe з нашим origin і через localStorage підмінив би
+    // сесію основного сайту.
+    async startWebAppSession(initData) {
+      const response = await api.telegramWebAppAuth(initData);
+      this.token = response.data.access;
+      this.refreshToken = null;
+      this.pendingLoginToken = null;
+      applyAccessToken(this.token);
+    },
+
     logout() {
       this.token = null;
       this.refreshToken = null;

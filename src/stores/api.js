@@ -49,6 +49,7 @@ export default {
   exportData: () => axios.get(`${API}/api/users/export-data/`),
 
   // ─── Telegram Link ───────────────────
+  telegramWebAppAuth: (initData) => axios.post(`${API}/api/telegram/webapp-auth/`, { init_data: initData }),
   createTelegramLinkCode: () => axios.post(`${API}/api/users/telegram/link-code/`),
   unlinkTelegram: () => axios.delete(`${API}/api/users/telegram/unlink/`),
 

@@ -1,6 +1,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import api from '../stores/api';
+import { useAuthStore } from '../stores/auth';
+import { getTelegramInitData } from '../telegramWebApp';
 import { usePreferencesStore } from '../stores/preferences';
 import {
   Activity,
@@ -122,16 +124,48 @@ function transactionTone(amount) {
   return Number(amount) >= 0 ? 'income' : 'expense';
 }
 
+const auth = useAuthStore();
+
+async function authenticateWebApp() {
+  const initData = getTelegramInitData();
+  if (!initData) {
+    errorMessage.value = 'Відкрийте MyHaven через кнопку WebApp у Telegram-боті.';
+    return false;
+  }
+  try {
+    await auth.startWebAppSession(initData);
+    return true;
+  } catch (error) {
+    console.error(error);
+    errorMessage.value = error.response?.status === 403
+      ? 'Цей Telegram ще не прив’язаний до акаунта MyHaven.'
+      : 'Не вдалося увійти через Telegram. Відкрийте WebApp із бота ще раз.';
+    return false;
+  }
+}
+
+function loadAll() {
+  return Promise.all([
+    api.getDashboard(),
+    api.getTransactions({ page_size: 20 }),
+    api.getBudgets(monthStart.value),
+    api.getStatistics(6),
+  ]);
+}
+
 async function refreshData(showSpinner = true) {
   if (showSpinner) isRefreshing.value = true;
   errorMessage.value = '';
   try {
-    const [dashboardRes, transactionsRes, budgetRes, statsRes] = await Promise.all([
-      api.getDashboard(),
-      api.getTransactions({ page_size: 20 }),
-      api.getBudgets(monthStart.value),
-      api.getStatistics(6),
-    ]);
+    let responses;
+    try {
+      responses = await loadAll();
+    } catch (error) {
+      // Access-токен WebApp короткоживучий: один повторний вхід через initData.
+      if (error.response?.status !== 401 || !(await authenticateWebApp())) throw error;
+      responses = await loadAll();
+    }
+    const [dashboardRes, transactionsRes, budgetRes, statsRes] = responses;
 
     dashboard.value = dashboardRes.data || dashboard.value;
     transactions.value = transactionsRes.data?.results || [];
@@ -156,8 +190,12 @@ function initTelegramChrome() {
   webApp.setBackgroundColor(ABYSS);
 }
 
-onMounted(() => {
+onMounted(async () => {
   initTelegramChrome();
+  if (!(await authenticateWebApp())) {
+    isLoading.value = false;
+    return;
+  }
   refreshData(true);
   refreshTimer.value = window.setInterval(() => refreshData(false), 8000);
 });
